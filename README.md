@@ -10,6 +10,7 @@
 **MatrimonyOS** is a modular monolith software platform engineered for high-trust, privacy-conscious matchmaking. Designed to replace outdated, intrusive matrimonial websites, MatrimonyOS combines modern privacy tiers, family involvement mechanics, multi-currency global transactions, and algorithmically guided compatibility.
 
 ### Primary Objectives
+
 1. **Commercial Scalability**: Build a sustainable, monetizable SaaS business.
 2. **Technical Excellence**: Serve as an international enterprise-grade portfolio demonstrating senior full-stack craftsmanship.
 3. **Privacy by Design**: Safeguard user biodata, photos, and identities through granular consent-based access tiers.
@@ -18,16 +19,16 @@
 
 ## 2. Technology Stack
 
-| Layer | Technology | Details |
-| :--- | :--- | :--- |
-| **Frontend** | Next.js (App Router) + React 19 | Server Components, Suspense, Turbopack, Tailwind CSS v4, Lucide |
-| **Backend** | Next.js Server Actions & Route Handlers | Modular Monolith, Node.js runtime, `server-only` isolation |
-| **Database** | PostgreSQL on Neon Cloud | Serverless autoscaling Postgres with connection pooling |
-| **ORM** | Prisma 7.10.0 | `@prisma/adapter-pg` driver adapter, explicit `prisma.config.ts` |
-| **Validation** | Zod | Runtime environment variables & input validation |
-| **Package Manager**| pnpm v12 | Workspace package management & reproducible locks |
-| **Code Quality** | ESLint + Prettier | Strict typing, Tailwind class sorting, zero lint warnings |
-| **Deployment** | Vercel | Production edge CDN with Node.js runtime functions |
+| Layer               | Technology                              | Details                                                          |
+| :------------------ | :-------------------------------------- | :--------------------------------------------------------------- |
+| **Frontend**        | Next.js (App Router) + React 19         | Server Components, Suspense, Turbopack, Tailwind CSS v4, Lucide  |
+| **Backend**         | Next.js Server Actions & Route Handlers | Modular Monolith, Node.js runtime, `server-only` isolation       |
+| **Database**        | PostgreSQL on Neon Cloud                | Serverless autoscaling Postgres with connection pooling          |
+| **ORM**             | Prisma 7.10.0                           | `@prisma/adapter-pg` driver adapter, explicit `prisma.config.ts` |
+| **Validation**      | Zod                                     | Runtime environment variables & input validation                 |
+| **Package Manager** | pnpm v12                                | Workspace package management & reproducible locks                |
+| **Code Quality**    | ESLint + Prettier                       | Strict typing, Tailwind class sorting, zero lint warnings        |
+| **Deployment**      | Vercel                                  | Production edge CDN with Node.js runtime functions               |
 
 ---
 
@@ -85,11 +86,13 @@ src/
 ## 4. Environment Setup
 
 ### 4.1 Prerequisites
+
 - **Node.js**: v20+ (v24 LTS recommended)
 - **pnpm**: v12+ (`npm install -g pnpm`)
 - **Git**: v2.40+
 
 ### 4.2 Clone and Install
+
 ```bash
 # Clone the repository
 git clone <repository-url>
@@ -100,12 +103,15 @@ pnpm install
 ```
 
 ### 4.3 Configure Environment Variables
+
 Copy `.env.example` to `.env`:
+
 ```bash
 cp .env.example .env
 ```
 
 Edit `.env` with your settings:
+
 ```env
 # Environment Mode
 NODE_ENV="development"
@@ -149,18 +155,18 @@ To obtain your actual Neon PostgreSQL cloud database credentials:
 
 ## 6. Development Commands
 
-| Command | Action |
-| :--- | :--- |
-| `pnpm dev` | Start the local Next.js development server with Turbopack |
-| `pnpm build` | Build the optimized production application |
-| `pnpm start` | Run the compiled production application server |
-| `pnpm lint` | Execute ESLint across all codebase files |
-| `pnpm typecheck` | Run the TypeScript compiler check (`tsc --noEmit`) |
-| `pnpm format` | Check formatting with Prettier |
-| `pnpm format:fix`| Automatically fix formatting with Prettier |
-| `pnpm db:generate`| Generate Prisma 7 Client into `src/generated/prisma` |
-| `pnpm db:migrate` | Apply schema migrations to your Neon database |
-| `pnpm db:studio` | Launch Prisma Studio GUI for database inspection |
+| Command            | Action                                                    |
+| :----------------- | :-------------------------------------------------------- |
+| `pnpm dev`         | Start the local Next.js development server with Turbopack |
+| `pnpm build`       | Build the optimized production application                |
+| `pnpm start`       | Run the compiled production application server            |
+| `pnpm lint`        | Execute ESLint across all codebase files                  |
+| `pnpm typecheck`   | Run the TypeScript compiler check (`tsc --noEmit`)        |
+| `pnpm format`      | Check formatting with Prettier                            |
+| `pnpm format:fix`  | Automatically fix formatting with Prettier                |
+| `pnpm db:generate` | Generate Prisma 7 Client into `src/generated/prisma`      |
+| `pnpm db:migrate`  | Apply schema migrations to your Neon database             |
+| `pnpm db:studio`   | Launch Prisma Studio GUI for database inspection          |
 
 ---
 
@@ -173,6 +179,7 @@ GET /api/health
 ```
 
 Sample Response:
+
 ```json
 {
   "status": "healthy",
@@ -209,6 +216,7 @@ Sample Response:
 ---
 
 ## 9. Next Steps (Upcoming Phase 2)
+
 - **Phase 2**: Authentication & Identity System (Auth.js / NextAuth, email verification, session management, user roles).
 - **Phase 3**: User Profiles & Privacy Tiers (Biodata schema, multi-step profile builder, guardian access controls).
 - **Phase 4**: Discovery Engine & Compatibility Matching.

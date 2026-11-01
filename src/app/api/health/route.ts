@@ -45,7 +45,8 @@ export async function GET() {
   }
 
   const response: HealthCheckResult = {
-    status: dbStatus === "connected" || isPlaceholderDb ? "healthy" : "degraded",
+    status:
+      dbStatus === "connected" || isPlaceholderDb ? "healthy" : "degraded",
     application: {
       name: APP_CONFIG.name,
       version: APP_CONFIG.version,
