@@ -1,0 +1,46 @@
+name: MatrimonyOS CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  validate:
+    name: Lint, Typecheck & Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12.4.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "pnpm"
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm db:generate
+
+      - name: Run Typecheck
+        run: pnpm typecheck
+
+      - name: Run Linter
+        run: pnpm lint
+
+      - name: Run Build
+        run: pnpm build
+        env:
+          DATABASE_URL: "postgresql://ci_user:ci_pass@ep-ci-pooler.us-east-2.aws.neon.tech/matrimonyos?sslmode=require"
+          DIRECT_URL: "postgresql://ci_user:ci_pass@ep-ci.us-east-2.aws.neon.tech/matrimonyos?sslmode=require"
+          AUTH_SECRET: "ci-secret-for-static-build-validation-32-chars-long"
+          NEXT_PUBLIC_APP_URL: "http://localhost:3000"
