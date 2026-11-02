@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, type LoginInput } from "@/lib/validations/auth";
 import { authClient } from "@/lib/auth-client";
+import { getAuthProvidersStatusAction } from "@/server/actions/auth.actions";
 import { Button } from "@/components/ui/button";
 import {
   Eye,
@@ -29,6 +30,23 @@ function LoginForm() {
   const [unverifiedEmail, setUnverifiedEmail] = React.useState<string | null>(
     null
   );
+  const [isGoogleEnabled, setIsGoogleEnabled] = React.useState<boolean>(false);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    getAuthProvidersStatusAction()
+      .then((res) => {
+        if (isMounted) {
+          setIsGoogleEnabled(res.googleOAuthEnabled);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setIsGoogleEnabled(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const {
     register,
@@ -99,11 +117,23 @@ function LoginForm() {
 
   const handleGoogleSignIn = async () => {
     setServerError(null);
+    if (!isGoogleEnabled) {
+      setServerError(
+        "Google OAuth is currently unconfigured. Please configure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env, or sign in using your email and password."
+      );
+      return;
+    }
     try {
-      await authClient.signIn.social({
+      const res = await authClient.signIn.social({
         provider: "google",
         callbackURL: callbackUrl,
       });
+      if (res?.error) {
+        setServerError(
+          res.error.message ||
+            "Google sign-in could not be completed. Please use your email credentials."
+        );
+      }
     } catch (err: unknown) {
       setServerError(
         err instanceof Error
@@ -160,7 +190,17 @@ function LoginForm() {
       <button
         type="button"
         onClick={handleGoogleSignIn}
-        className="flex h-11 w-full items-center justify-center gap-3 rounded-xl border border-[#E8E2D5] bg-white text-xs font-semibold text-[#14243A] shadow-sm transition hover:border-[#B89A63]/50 hover:bg-[#FAF8F3] focus:ring-2 focus:ring-[#B89A63] focus:outline-none"
+        disabled={!isGoogleEnabled}
+        title={
+          isGoogleEnabled
+            ? "Sign in with Google"
+            : "Google OAuth credentials are not configured in .env"
+        }
+        className={`flex h-11 w-full items-center justify-center gap-3 rounded-xl border border-[#E8E2D5] bg-white text-xs font-semibold text-[#14243A] shadow-sm transition ${
+          !isGoogleEnabled
+            ? "cursor-not-allowed bg-[#FAF8F3] opacity-60"
+            : "hover:border-[#B89A63]/50 hover:bg-[#FAF8F3] focus:ring-2 focus:ring-[#B89A63]"
+        }`}
       >
         <svg className="h-4 w-4" viewBox="0 0 24 24">
           <path
@@ -181,6 +221,11 @@ function LoginForm() {
           />
         </svg>
         <span>Sign in with Google</span>
+        {!isGoogleEnabled && (
+          <span className="rounded bg-[#EEE8DC] px-2 py-0.5 text-[10px] font-medium text-[#777777]">
+            Config required
+          </span>
+        )}
       </button>
 
       <div className="relative my-6 flex items-center justify-center">

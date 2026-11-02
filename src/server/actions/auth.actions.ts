@@ -154,3 +154,19 @@ export async function confirmEmailVerificationAction(
     };
   }
 }
+
+/**
+ * Safely inspect which auth providers are active without leaking secrets
+ */
+export async function getAuthProvidersStatusAction(): Promise<{
+  googleOAuthEnabled: boolean;
+}> {
+  return {
+    googleOAuthEnabled: Boolean(
+      process.env.GOOGLE_CLIENT_ID &&
+      process.env.GOOGLE_CLIENT_ID.trim() !== "" &&
+      process.env.GOOGLE_CLIENT_SECRET &&
+      process.env.GOOGLE_CLIENT_SECRET.trim() !== ""
+    ),
+  };
+}

@@ -44,13 +44,18 @@ export const auth = betterAuth({
       );
     },
   },
-  socialProviders: {
-    google: {
-      clientId: env.GOOGLE_CLIENT_ID || "",
-      clientSecret: env.GOOGLE_CLIENT_SECRET || "",
-      enabled: Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET),
-    },
-  },
+  socialProviders:
+    env.GOOGLE_CLIENT_ID &&
+    env.GOOGLE_CLIENT_ID.trim() !== "" &&
+    env.GOOGLE_CLIENT_SECRET &&
+    env.GOOGLE_CLIENT_SECRET.trim() !== ""
+      ? {
+          google: {
+            clientId: env.GOOGLE_CLIENT_ID,
+            clientSecret: env.GOOGLE_CLIENT_SECRET,
+          },
+        }
+      : undefined,
   rateLimit: {
     window: 60,
     max: 20,

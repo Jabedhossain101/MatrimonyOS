@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { registerSchema, type RegisterInput } from "@/lib/validations/auth";
 import { authClient } from "@/lib/auth-client";
+import { getAuthProvidersStatusAction } from "@/server/actions/auth.actions";
 import { Button } from "@/components/ui/button";
 import {
   Eye,
@@ -26,6 +27,23 @@ export default function RegisterPage() {
   const [serverError, setServerError] = React.useState<string | null>(null);
   const [isSuccess, setIsSuccess] = React.useState(false);
   const [registeredEmail, setRegisteredEmail] = React.useState("");
+  const [isGoogleEnabled, setIsGoogleEnabled] = React.useState<boolean>(false);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    getAuthProvidersStatusAction()
+      .then((res) => {
+        if (isMounted) {
+          setIsGoogleEnabled(res.googleOAuthEnabled);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setIsGoogleEnabled(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const {
     register,
@@ -89,11 +107,23 @@ export default function RegisterPage() {
 
   const handleGoogleSignUp = async () => {
     setServerError(null);
+    if (!isGoogleEnabled) {
+      setServerError(
+        "Google registration is currently unconfigured. Please configure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env, or register with your email."
+      );
+      return;
+    }
     try {
-      await authClient.signIn.social({
+      const res = await authClient.signIn.social({
         provider: "google",
         callbackURL: "/dashboard",
       });
+      if (res?.error) {
+        setServerError(
+          res.error.message ||
+            "Google sign-up failed. Please try standard email registration."
+        );
+      }
     } catch (err: unknown) {
       setServerError(
         err instanceof Error
@@ -176,7 +206,17 @@ export default function RegisterPage() {
       <button
         type="button"
         onClick={handleGoogleSignUp}
-        className="flex h-11 w-full items-center justify-center gap-3 rounded-xl border border-[#E8E2D5] bg-white text-xs font-semibold text-[#14243A] shadow-sm transition hover:border-[#B89A63]/50 hover:bg-[#FAF8F3] focus:ring-2 focus:ring-[#B89A63] focus:outline-none"
+        disabled={!isGoogleEnabled}
+        title={
+          isGoogleEnabled
+            ? "Continue with Google"
+            : "Google OAuth credentials are not configured in .env"
+        }
+        className={`flex h-11 w-full items-center justify-center gap-3 rounded-xl border border-[#E8E2D5] bg-white text-xs font-semibold text-[#14243A] shadow-sm transition ${
+          !isGoogleEnabled
+            ? "cursor-not-allowed bg-[#FAF8F3] opacity-60"
+            : "hover:border-[#B89A63]/50 hover:bg-[#FAF8F3] focus:ring-2 focus:ring-[#B89A63]"
+        }`}
       >
         <svg className="h-4 w-4" viewBox="0 0 24 24">
           <path
@@ -197,6 +237,11 @@ export default function RegisterPage() {
           />
         </svg>
         <span>Continue with Google</span>
+        {!isGoogleEnabled && (
+          <span className="rounded bg-[#EEE8DC] px-2 py-0.5 text-[10px] font-medium text-[#777777]">
+            Config required
+          </span>
+        )}
       </button>
 
       <div className="relative my-6 flex items-center justify-center">
