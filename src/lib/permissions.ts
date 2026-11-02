@@ -136,4 +136,3 @@ export function hasAllPermissions(
 ): boolean {
   return permissions.every((perm) => hasPermission(userRoles, perm));
 }
-
