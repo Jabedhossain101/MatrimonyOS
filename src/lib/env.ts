@@ -18,6 +18,11 @@ const envSchema = z.object({
     .string()
     .url("NEXT_PUBLIC_APP_URL must be a valid URL")
     .default("http://localhost:3000"),
+  BETTER_AUTH_URL: z.string().url().optional(),
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  RESEND_API_KEY: z.string().optional(),
+  EMAIL_FROM: z.string().default("MatrimonyOS <no-reply@matrimonyos.com>"),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -28,6 +33,12 @@ const parsedEnv = envSchema.safeParse({
   DIRECT_URL: process.env.DIRECT_URL,
   AUTH_SECRET: process.env.AUTH_SECRET,
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+  BETTER_AUTH_URL:
+    process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL,
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+  GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+  RESEND_API_KEY: process.env.RESEND_API_KEY,
+  EMAIL_FROM: process.env.EMAIL_FROM,
 });
 
 if (!parsedEnv.success) {
@@ -55,4 +66,13 @@ export const env: Env = parsedEnv.success
         "dev-auth-secret-placeholder-minimum-32-chars-long",
       NEXT_PUBLIC_APP_URL:
         process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+      BETTER_AUTH_URL:
+        process.env.BETTER_AUTH_URL ||
+        process.env.NEXT_PUBLIC_APP_URL ||
+        "http://localhost:3000",
+      GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+      GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+      RESEND_API_KEY: process.env.RESEND_API_KEY,
+      EMAIL_FROM:
+        process.env.EMAIL_FROM || "MatrimonyOS <no-reply@matrimonyos.com>",
     };

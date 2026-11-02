@@ -13,18 +13,23 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
-    "db:verify": "tsx scripts/verify-db.ts"
+    "db:verify": "tsx scripts/verify-db.ts",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@hookform/resolvers": "^7.0.1",
     "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "7.10.0",
     "@prisma/client-runtime-utils": "7.10.0",
+    "better-auth": "^1.7.15",
     "dotenv": "^16.4.7",
     "lucide-react": "^1.66.0",
     "next": "16.4.3",
     "pg": "^8.13.3",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "react-hook-form": "^7.91.0",
+    "resend": "^6.37.0",
     "server-only": "^0.0.1",
     "zod": "^3.24.2"
   },
@@ -42,7 +47,8 @@
     "prisma": "7.10.0",
     "tailwindcss": "^4",
     "tsx": "^4.19.3",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^5.0.5"
   },
   "packageManager": "pnpm@12.4.1"
 }

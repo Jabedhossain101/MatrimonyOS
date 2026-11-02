@@ -3,4 +3,4 @@
  * Role-based and ownership-based permission enforcement
  */
 
-export {};
+export * from "./auth.policy";

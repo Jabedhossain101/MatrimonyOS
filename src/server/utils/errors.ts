@@ -54,6 +54,22 @@ export class ConflictError extends AppError {
   }
 }
 
+export class AccountSuspendedError extends AppError {
+  constructor(
+    message = "Your account has been suspended. Please contact support@matrimonyos.com for assistance."
+  ) {
+    super(message, 403, "ACCOUNT_SUSPENDED");
+  }
+}
+
+export class AccountDeactivatedError extends AppError {
+  constructor(
+    message = "Your account has been deactivated. Please contact concierge support to reactivate."
+  ) {
+    super(message, 403, "ACCOUNT_DEACTIVATED");
+  }
+}
+
 export interface ErrorResponsePayload {
   success: false;
   error: {
