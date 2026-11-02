@@ -1,46 +1,80 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans:
+    var(--font-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, sans-serif;
+  --font-serif:
+    var(--font-serif), Georgia, Cambria, "Times New Roman", Times, serif;
+
+  --color-navy: #14243a;
+  --color-midnight: #0b1728;
+  --color-ivory: #faf8f3;
+  --color-soft-white: #ffffff;
+  --color-gold: #b89a63;
+  --color-gold-hover: #a3854f;
+  --color-beige: #eee8dc;
+  --color-charcoal: #333333;
+  --color-muted-gray: #777777;
+}
+
 @layer base {
   :root {
-    --background: #faf9f6; /* Ivory */
-    --foreground: #0f172a; /* Navy */
+    --background: #faf8f3;
+    --foreground: #333333;
     --card: #ffffff;
-    --card-foreground: #0f172a;
-    --primary: #0f172a; /* Deep Navy */
-    --primary-foreground: #faf9f6;
-    --secondary: #f4f1ea; /* Muted Ivory */
-    --secondary-foreground: #1e293b;
-    --accent: #c5a059; /* Muted Gold */
-    --accent-foreground: #0f172a;
-    --muted: #e2e8f0;
-    --muted-foreground: #64748b;
-    --border: #e2e8f0;
-    --ring: #c5a059;
+    --card-foreground: #333333;
+    --primary: #14243a;
+    --primary-foreground: #faf8f3;
+    --secondary: #eee8dc;
+    --secondary-foreground: #14243a;
+    --accent: #b89a63;
+    --accent-foreground: #0b1728;
+    --muted: #e5dfc9;
+    --muted-foreground: #777777;
+    --border: #e8e2d5;
   }
 
-  .dark {
-    --background: #090d16;
-    --foreground: #f8fafc;
-    --card: #0f172a;
-    --card-foreground: #f8fafc;
-    --primary: #faf9f6;
-    --primary-foreground: #0f172a;
-    --secondary: #1e293b;
-    --secondary-foreground: #f8fafc;
-    --accent: #c5a059;
-    --accent-foreground: #090d16;
-    --muted: #1e293b;
-    --muted-foreground: #94a3b8;
-    --border: #334155;
-    --ring: #c5a059;
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  .font-editorial {
+    font-family: var(--font-serif);
+    letter-spacing: -0.015em;
   }
 }
 
-body {
-  background-color: var(--background);
-  color: var(--foreground);
-  min-height: 100vh;
-  font-feature-settings:
-    "rlig" 1,
-    "calt" 1;
+/* Subtle editorial scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #faf8f3;
+}
+::-webkit-scrollbar-thumb {
+  background: #eee8dc;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #b89a63;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

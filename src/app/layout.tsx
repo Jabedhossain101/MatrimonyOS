@@ -1,38 +1,41 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Manrope, Playfair_Display } from "next/font/google";
 import { APP_CONFIG } from "@/lib/constants";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const manrope = Manrope({
+  variable: "--font-sans",
   subsets: ["latin"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const playfair = Playfair_Display({
+  variable: "--font-serif",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   title: {
-    default: `${APP_CONFIG.name} — ${APP_CONFIG.tagline}`,
+    default: `${APP_CONFIG.name} — A More Meaningful Way to Find Your Life Partner`,
     template: `%s | ${APP_CONFIG.name}`,
   },
-  description: APP_CONFIG.description,
+  description:
+    "A global, privacy-first matrimonial matchmaking platform for individuals and families seeking meaningful, verified connections across Bangladesh, UK, USA, Canada, Europe, Middle East, and beyond.",
   keywords: [
-    "Matrimony",
-    "Privacy-first matchmaking",
-    "Global matrimony",
-    "Bangladesh matrimony",
-    "UK matrimony",
-    "USA matrimony",
+    "MatrimonyOS",
+    "Privacy-first matrimony",
+    "Global South Asian matrimony",
+    "Verified matrimonial platform",
     "Halal matchmaking",
-    "SaaS matrimony",
+    "Bangladeshi matrimony UK USA Canada",
+    "Confidential matchmaking SaaS",
   ],
   authors: [{ name: "MatrimonyOS Team" }],
   openGraph: {
-    title: `${APP_CONFIG.name} — ${APP_CONFIG.tagline}`,
-    description: APP_CONFIG.description,
+    title: `${APP_CONFIG.name} — A More Meaningful Way to Find Your Life Partner`,
+    description:
+      "A global, privacy-first matrimonial matchmaking platform connecting conscious individuals and families.",
     type: "website",
     locale: "en_US",
     siteName: APP_CONFIG.name,
@@ -47,9 +50,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${manrope.variable} ${playfair.variable} h-full scroll-smooth antialiased`}
     >
-      <body className="flex min-h-full flex-col bg-[#FAF9F6] text-[#0F172A] selection:bg-[#C5A059] selection:text-[#0F172A]">
+      <body className="flex min-h-full flex-col bg-[#FAF8F3] font-sans text-[#333333] selection:bg-[#B89A63] selection:text-[#FAF8F3]">
         {children}
       </body>
     </html>
