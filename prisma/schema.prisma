@@ -73,6 +73,14 @@ enum ProfileVisibility {
   PRIVATE
 }
 
+enum InterestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  WITHDRAWN
+  EXPIRED
+}
+
 // -----------------------------------------------------------------------------
 // Better Auth Core Authentication Entities
 // -----------------------------------------------------------------------------
@@ -91,6 +99,7 @@ model User {
   accounts           Account[]
   roles              UserRole[]
   matrimonialProfile MatrimonialProfile?
+  shortlists         ProfileShortlist[]
 
   @@map("user")
 }
@@ -239,6 +248,14 @@ model MatrimonialProfile {
   partnerPreference PartnerPreference?
   privacySettings   ProfilePrivacySettings?
 
+  // Phase 5: Matching, Shortlist & Interest Relationships
+  shortlistsCreated ProfileShortlist[]    @relation("ShortlistsCreated")
+  shortlistedBy     ProfileShortlist[]    @relation("ShortlistedBy")
+  interestsSent     MatrimonialInterest[] @relation("InterestsSent")
+  interestsReceived MatrimonialInterest[] @relation("InterestsReceived")
+  matchesAsProfile1 MutualMatch[]         @relation("MatchesAsProfile1")
+  matchesAsProfile2 MutualMatch[]         @relation("MatchesAsProfile2")
+
   @@index([userId])
   @@index([slug])
   @@index([gender, maritalStatus, religion])
@@ -327,4 +344,64 @@ model ProfilePrivacySettings {
 
   @@index([profileId])
   @@map("profile_privacy_settings")
+}
+
+// -----------------------------------------------------------------------------
+// Phase 5: Discovery, Matching, Shortlist & Interest Entities
+// -----------------------------------------------------------------------------
+
+model ProfileShortlist {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  profileId       String   @map("profile_id")
+  targetProfileId String   @map("target_profile_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profile       MatrimonialProfile @relation("ShortlistsCreated", fields: [profileId], references: [id], onDelete: Cascade)
+  targetProfile MatrimonialProfile @relation("ShortlistedBy", fields: [targetProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, targetProfileId])
+  @@index([profileId])
+  @@index([targetProfileId])
+  @@index([userId])
+  @@map("profile_shortlists")
+}
+
+model MatrimonialInterest {
+  id                 String         @id @default(cuid())
+  senderProfileId    String         @map("sender_profile_id")
+  recipientProfileId String         @map("recipient_profile_id")
+  status             InterestStatus @default(PENDING)
+  message            String?        @db.Text
+  respondedAt        DateTime?      @map("responded_at")
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime       @updatedAt @map("updated_at")
+
+  senderProfile    MatrimonialProfile @relation("InterestsSent", fields: [senderProfileId], references: [id], onDelete: Cascade)
+  recipientProfile MatrimonialProfile @relation("InterestsReceived", fields: [recipientProfileId], references: [id], onDelete: Cascade)
+  matches          MutualMatch[]
+
+  @@unique([senderProfileId, recipientProfileId])
+  @@index([senderProfileId, status])
+  @@index([recipientProfileId, status])
+  @@index([senderProfileId, createdAt])
+  @@map("matrimonial_interests")
+}
+
+model MutualMatch {
+  id         String   @id @default(cuid())
+  profile1Id String   @map("profile1_id")
+  profile2Id String   @map("profile2_id")
+  matchedAt  DateTime @default(now()) @map("matched_at")
+  interestId String?  @map("interest_id")
+
+  profile1 MatrimonialProfile   @relation("MatchesAsProfile1", fields: [profile1Id], references: [id], onDelete: Cascade)
+  profile2 MatrimonialProfile   @relation("MatchesAsProfile2", fields: [profile2Id], references: [id], onDelete: Cascade)
+  interest MatrimonialInterest? @relation(fields: [interestId], references: [id], onDelete: SetNull)
+
+  @@unique([profile1Id, profile2Id])
+  @@index([profile1Id])
+  @@index([profile2Id])
+  @@map("mutual_matches")
 }

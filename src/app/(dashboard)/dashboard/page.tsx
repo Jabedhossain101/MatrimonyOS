@@ -4,6 +4,7 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/server/policies/auth.policy";
 import { profileService } from "@/server/services/profile.service";
+import { db } from "@/server/db";
 import { AppRole } from "@/lib/permissions";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import {
@@ -25,6 +26,9 @@ import {
   Users as FamilyIcon,
   Smile,
   Sliders,
+  Search,
+  Send,
+  Inbox,
   ExternalLink,
 } from "lucide-react";
 import { calculateProfileCompletion } from "@/server/services/profile-completion.service";
@@ -46,6 +50,19 @@ export default async function DashboardPage() {
 
   const profile = await profileService.getOrCreateProfile(user.id);
   const completionStats = calculateProfileCompletion(profile);
+
+  const [shortlistCount, pendingInterestsCount, matchesCount] =
+    await Promise.all([
+      db.profileShortlist.count({ where: { profileId: profile.id } }),
+      db.matrimonialInterest.count({
+        where: { recipientProfileId: profile.id, status: "PENDING" },
+      }),
+      db.mutualMatch.count({
+        where: {
+          OR: [{ profile1Id: profile.id }, { profile2Id: profile.id }],
+        },
+      }),
+    ]);
 
   const isAdmin =
     user.roles.includes(AppRole.ADMIN) ||
@@ -82,6 +99,52 @@ export default async function DashboardPage() {
           </Link>
 
           <div className="flex items-center gap-3">
+            <Link
+              href="/dashboard/discover"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[#E8E2D5] bg-white px-3 py-1.5 text-xs font-semibold text-[#14243A] transition hover:border-[#B89A63] hover:text-[#B89A63]"
+            >
+              <Search className="h-3.5 w-3.5 text-[#B89A63]" />
+              <span className="hidden md:inline">Discover</span>
+            </Link>
+
+            <Link
+              href="/dashboard/shortlist"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[#E8E2D5] bg-white px-3 py-1.5 text-xs font-semibold text-[#14243A] transition hover:border-[#B89A63] hover:text-[#B89A63]"
+            >
+              <Heart className="h-3.5 w-3.5 text-rose-500" />
+              <span className="hidden md:inline">Shortlist</span>
+              {shortlistCount > 0 && (
+                <span className="rounded-full bg-rose-50 px-1.5 py-0.2 text-[10px] font-bold text-rose-600">
+                  {shortlistCount}
+                </span>
+              )}
+            </Link>
+
+            <Link
+              href="/dashboard/interests"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[#E8E2D5] bg-white px-3 py-1.5 text-xs font-semibold text-[#14243A] transition hover:border-[#B89A63] hover:text-[#B89A63]"
+            >
+              <Inbox className="h-3.5 w-3.5 text-[#B89A63]" />
+              <span className="hidden md:inline">Interests</span>
+              {pendingInterestsCount > 0 && (
+                <span className="rounded-full bg-[#B89A63] px-1.5 py-0.2 text-[10px] font-bold text-white">
+                  {pendingInterestsCount}
+                </span>
+              )}
+            </Link>
+
+            <Link
+              href="/dashboard/matches"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#14243A] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#1e3452]"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-[#B89A63]" />
+              <span className="hidden sm:inline">Matches</span>
+              {matchesCount > 0 && (
+                <span className="rounded-full bg-emerald-500 px-1.5 py-0.2 text-[10px] font-bold text-white">
+                  {matchesCount}
+                </span>
+              )}
+            </Link>
             <Link
               href={`/profile/${profile.slug}`}
               target="_blank"
@@ -453,67 +516,119 @@ export default async function DashboardPage() {
               </Link>
             </div>
 
-            {/* Coming Soon Features in Phase 5 & 6 (Clearly Labelled - No Fake Data) */}
+                        {/* Phase 5 Live Hub & Phase 6 Roadmap */}
             <div className="rounded-3xl border border-[#E8E2D5] bg-[#FAF8F3] p-6 shadow-sm">
               <div className="flex items-center justify-between border-b border-[#E8E2D5] pb-3">
-                <h3 className="font-serif text-base font-bold text-[#14243A]">
-                  Upcoming Platform Capabilities
-                </h3>
-                <span className="rounded-full bg-[#EEE8DC] px-2.5 py-0.5 text-[10px] font-semibold text-[#777777]">
-                  In Active Development
+                <div className="flex items-center gap-2">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#0F2D3C] text-[#D4AF37]">
+                    <Sparkles className="h-3.5 w-3.5" />
+                  </div>
+                  <h3 className="font-serif text-base font-bold text-[#14243A]">
+                    Discovery & Matchmaking Hub (Phase 5 Live)
+                  </h3>
+                </div>
+                <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800">
+                  Active Features
                 </span>
               </div>
 
-              <div className="mt-4 grid gap-4 sm:grid-cols-3">
-                <div className="rounded-2xl border border-[#E8E2D5]/80 bg-white/70 p-4 opacity-75">
+              <div className="mt-4 grid gap-4 sm:grid-cols-4">
+                <Link
+                  href="/dashboard/discover"
+                  className="group rounded-2xl border border-[#E8E2D5] bg-white p-4 shadow-xs transition hover:border-[#B89A63] hover:shadow-md"
+                >
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-[#B89A63] uppercase">
-                      Phase 5
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#B89A63]">
+                      Directory
                     </span>
-                    <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[9px] text-gray-500">
-                      Coming Soon
-                    </span>
+                    <Search className="h-4 w-4 text-[#777777] transition group-hover:text-[#B89A63]" />
                   </div>
-                  <h4 className="mt-2 text-xs font-bold text-[#14243A]">
-                    Discreet Match Discovery
+                  <h4 className="mt-2 text-sm font-bold text-[#14243A]">
+                    Browse Candidates
                   </h4>
                   <p className="mt-1 text-[11px] text-[#777777]">
-                    Algorithmic compatibility matching and international South Asian directory.
+                    Search verified profiles with compatibility weighting.
                   </p>
-                </div>
+                </Link>
 
-                <div className="rounded-2xl border border-[#E8E2D5]/80 bg-white/70 p-4 opacity-75">
+                <Link
+                  href="/dashboard/matches"
+                  className="group rounded-2xl border border-[#E8E2D5] bg-white p-4 shadow-xs transition hover:border-[#B89A63] hover:shadow-md"
+                >
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-[#B89A63] uppercase">
-                      Phase 5
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#B89A63]">
+                      Matches
                     </span>
-                    <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[9px] text-gray-500">
-                      Coming Soon
-                    </span>
+                    <Heart className="h-4 w-4 text-[#777777] transition group-hover:text-rose-500" />
                   </div>
-                  <h4 className="mt-2 text-xs font-bold text-[#14243A]">
-                    Mutual Interest Exchange
+                  <h4 className="mt-2 text-sm font-bold text-[#14243A]">
+                    Mutual Matches
                   </h4>
                   <p className="mt-1 text-[11px] text-[#777777]">
-                    Discreet interest sending, acceptance workflows, and guardian invitations.
+                    Candidates who reciprocated your interest for serious alignment.
                   </p>
-                </div>
+                </Link>
 
-                <div className="rounded-2xl border border-[#E8E2D5]/80 bg-white/70 p-4 opacity-75">
+                <Link
+                  href="/dashboard/interests"
+                  className="group rounded-2xl border border-[#E8E2D5] bg-white p-4 shadow-xs transition hover:border-[#B89A63] hover:shadow-md"
+                >
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-[#B89A63] uppercase">
-                      Phase 6
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#B89A63]">
+                      Exchange
                     </span>
-                    <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[9px] text-gray-500">
-                      Coming Soon
-                    </span>
+                    <Send className="h-4 w-4 text-[#777777] transition group-hover:text-[#0F2D3C]" />
                   </div>
-                  <h4 className="mt-2 text-xs font-bold text-[#14243A]">
-                    Real-time Messaging
+                  <h4 className="mt-2 text-sm font-bold text-[#14243A]">
+                    Interests Management
                   </h4>
                   <p className="mt-1 text-[11px] text-[#777777]">
-                    Consent-based secure chat channels between verified families.
+                    Review inbound proposals or check sent interest status.
                   </p>
+                </Link>
+
+                <Link
+                  href="/dashboard/shortlist"
+                  className="group rounded-2xl border border-[#E8E2D5] bg-white p-4 shadow-xs transition hover:border-[#B89A63] hover:shadow-md"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#B89A63]">
+                      Bookmarks
+                    </span>
+                    <Clock className="h-4 w-4 text-[#777777] transition group-hover:text-[#B89A63]" />
+                  </div>
+                  <h4 className="mt-2 text-sm font-bold text-[#14243A]">
+                    Shortlisted Profiles
+                  </h4>
+                  <p className="mt-1 text-[11px] text-[#777777]">
+                    Privately saved candidates for careful deliberation with family.
+                  </p>
+                </Link>
+              </div>
+
+              {/* Phase 6 Roadmap */}
+              <div className="mt-5 border-t border-[#E8E2D5] pt-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-semibold text-[#777777] uppercase tracking-wider">
+                    Next Roadmap Milestone — Phase 6
+                  </h4>
+                  <span className="rounded bg-amber-50 px-2 py-0.5 text-[9px] font-semibold text-amber-800 border border-amber-200">
+                    Planned Next
+                  </span>
+                </div>
+                <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-xl border border-dashed border-[#E8E2D5] bg-white/60 p-3">
+                    <div className="text-xs font-bold text-[#14243A]">Consent-Based Direct Messaging</div>
+                    <p className="mt-0.5 text-[11px] text-[#777777]">
+                      End-to-end encrypted messaging channels unlocked only upon mutual match confirmation.
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-dashed border-[#E8E2D5] bg-white/60 p-3">
+                    <div className="text-xs font-bold text-[#14243A]">Guardian Co-Management & Calling</div>
+                    <p className="mt-0.5 text-[11px] text-[#777777]">
+                      Wali/Guardian multi-family conference rooms, schedule video introductions, and privacy watermarking.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

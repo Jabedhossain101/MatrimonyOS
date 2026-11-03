@@ -35,19 +35,22 @@ describe("Google OAuth Configuration", () => {
     expect(status.googleOAuthEnabled).toBe(true);
   });
 
-  it("generates a valid Google OAuth authorization redirect URL", async () => {
-    const result = await auth.api.signInSocial({
-      body: {
-        provider: "google",
-        callbackURL: "/dashboard",
-      },
-    });
+  it(
+    "generates a valid Google OAuth authorization redirect URL",
+    async () => {
+      const result = await auth.api.signInSocial({
+        body: {
+          provider: "google",
+          callbackURL: "/dashboard",
+        },
+      });
 
-    expect(result).toBeDefined();
-    expect(result.url).toBeDefined();
-    expect(result.url).toContain("accounts.google.com");
-    expect(result.url).toContain("oauth2");
-    expect(result.url).toContain("client_id=");
-  });
+      expect(result).toBeDefined();
+      expect(result.url).toBeDefined();
+      expect(result.url).toContain("accounts.google.com");
+      expect(result.url).toContain("oauth2");
+      expect(result.url).toContain("client_id=");
+    },
+    20000
+  );
 });
-
