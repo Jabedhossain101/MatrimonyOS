@@ -50,3 +50,4 @@ describe("Google OAuth Configuration", () => {
     expect(result.url).toContain("client_id=");
   });
 });
+
