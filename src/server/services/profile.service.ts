@@ -80,7 +80,7 @@ export const profileService = {
         },
       });
 
-      await tx.profilePrivacySettings.create({
+      const privacySettings = await tx.profilePrivacySettings.create({
         data: {
           profileId: profile.id,
           profileVisibility: "MEMBERS_ONLY",
@@ -94,7 +94,7 @@ export const profileService = {
         },
       });
 
-      await tx.partnerPreference.create({
+      const partnerPreference = await tx.partnerPreference.create({
         data: {
           profileId: profile.id,
           minAge: 18,
@@ -102,16 +102,14 @@ export const profileService = {
         },
       });
 
-      return tx.matrimonialProfile.findUnique({
-        where: { id: profile.id },
-        include: {
-          educations: { orderBy: { graduationYear: "desc" } },
-          photos: { orderBy: { orderIndex: "asc" } },
-          partnerPreference: true,
-          privacySettings: true,
-          user: { select: { name: true, email: true } },
-        },
-      });
+      return {
+        ...profile,
+        educations: [],
+        photos: [],
+        partnerPreference,
+        privacySettings,
+        user: { name: user.name, email: user.email },
+      };
     });
 
     return newProfile as CompleteProfile;
