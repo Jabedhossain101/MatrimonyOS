@@ -104,8 +104,21 @@ export const auth = betterAuth({
                 role: AppRole.MEMBER,
               },
             });
+
+            // For OAuth signups (e.g. Google), emailVerified is true upon creation.
+            // Activate their account immediately and send welcome email.
+            if (user.emailVerified) {
+              await db.user.update({
+                where: { id: user.id },
+                data: { accountStatus: "ACTIVE" },
+              });
+              await emailService.sendWelcomeEmail(user.email, user.name);
+            }
           } catch (err) {
-            console.error("Failed to assign default MEMBER role:", err);
+            console.error(
+              "Failed to assign default MEMBER role or activate user:",
+              err
+            );
           }
         },
       },
