@@ -26,6 +26,52 @@ enum AppRole {
   SUPER_ADMIN
 }
 
+enum OnboardingStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum ProfileFor {
+  SELF
+  SON
+  DAUGHTER
+  BROTHER
+  SISTER
+  RELATIVE
+  FRIEND
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum MaritalStatus {
+  NEVER_MARRIED
+  DIVORCED
+  WIDOWED
+  SEPARATED
+  ANNULLED
+}
+
+enum FamilyType {
+  NUCLEAR
+  JOINT
+}
+
+enum PhotoModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ProfileVisibility {
+  PUBLIC
+  MEMBERS_ONLY
+  PRIVATE
+}
+
 // -----------------------------------------------------------------------------
 // Better Auth Core Authentication Entities
 // -----------------------------------------------------------------------------
@@ -40,9 +86,10 @@ model User {
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
 
-  sessions Session[]
-  accounts Account[]
-  roles    UserRole[]
+  sessions           Session[]
+  accounts           Account[]
+  roles              UserRole[]
+  matrimonialProfile MatrimonialProfile?
 
   @@map("user")
 }
@@ -111,4 +158,172 @@ model UserRole {
   @@unique([userId, role])
   @@index([userId])
   @@map("user_roles")
+}
+
+// -----------------------------------------------------------------------------
+// Phase 4: Matrimonial Profile & Onboarding Entities
+// -----------------------------------------------------------------------------
+
+model MatrimonialProfile {
+  id                   String           @id @default(cuid())
+  userId               String           @unique @map("user_id")
+  slug                 String           @unique
+  onboardingStatus     OnboardingStatus @default(NOT_STARTED) @map("onboarding_status")
+  onboardingStep       Int              @default(1) @map("onboarding_step")
+  completionPercentage Int              @default(0) @map("completion_percentage")
+
+  // Step 1: Basic Information
+  profileFor         ProfileFor?    @map("profile_for")
+  fullName           String?        @map("full_name")
+  dateOfBirth        DateTime?      @map("date_of_birth")
+  gender             Gender?
+  maritalStatus      MaritalStatus? @map("marital_status")
+  countryOfResidence String?        @map("country_of_residence")
+  cityOfResidence    String?        @map("city_of_residence")
+  nationality        String?
+  preferredLanguage  String?        @map("preferred_language")
+
+  // Step 2: Personal Details
+  heightCm           Int?    @map("height_cm")
+  weightKg           Int?    @map("weight_kg")
+  bodyType           String? @map("body_type")
+  complexion         String?
+  religion           String?
+  religiousPractice  String? @map("religious_practice")
+  communityEthnicity String? @map("community_ethnicity")
+  disabilityInfo     String? @map("disability_info")
+  aboutMe            String? @map("about_me") @db.Text
+
+  // Step 4: Career & Professional Information
+  employmentStatus  String? @map("employment_status")
+  profession        String?
+  jobTitle          String? @map("job_title")
+  industry          String?
+  employer          String?
+  incomeCurrency    String? @default("USD") @map("income_currency")
+  annualIncomeRange String? @map("annual_income_range")
+  workLocation      String? @map("work_location")
+  careerDescription String? @map("career_description") @db.Text
+
+  // Step 5: Family Information
+  familyType           FamilyType? @map("family_type")
+  familyValues         String?     @map("family_values")
+  fatherOccupation     String?     @map("father_occupation")
+  motherOccupation     String?     @map("mother_occupation")
+  brothersCount        Int         @default(0) @map("brothers_count")
+  sistersCount         Int         @default(0) @map("sisters_count")
+  brothersMarriedCount Int         @default(0) @map("brothers_married_count")
+  sistersMarriedCount  Int         @default(0) @map("sisters_married_count")
+  familyLocation       String?     @map("family_location")
+  familyBackground     String?     @map("family_background") @db.Text
+
+  // Step 6: Lifestyle
+  dietaryHabits        String?  @map("dietary_habits")
+  smokingHabits        String?  @map("smoking_habits")
+  drinkingHabits       String?  @map("drinking_habits")
+  exerciseHabits       String?  @map("exercise_habits")
+  livingArrangement    String?  @map("living_arrangement")
+  hobbies              String[] @default([])
+  languages            String[] @default([])
+  lifestyleDescription String?  @map("lifestyle_description") @db.Text
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  user              User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  educations        ProfileEducation[]
+  photos            ProfilePhoto[]
+  partnerPreference PartnerPreference?
+  privacySettings   ProfilePrivacySettings?
+
+  @@index([userId])
+  @@index([slug])
+  @@index([gender, maritalStatus, religion])
+  @@map("matrimonial_profiles")
+}
+
+model ProfileEducation {
+  id                       String   @id @default(cuid())
+  profileId                String   @map("profile_id")
+  educationLevel           String   @map("education_level")
+  degree                   String
+  fieldOfStudy             String   @map("field_of_study")
+  institution              String
+  country                  String
+  graduationYear           Int      @map("graduation_year")
+  additionalQualifications String?  @map("additional_qualifications") @db.Text
+  isHighest                Boolean  @default(false) @map("is_highest")
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @updatedAt @map("updated_at")
+
+  profile MatrimonialProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@map("profile_educations")
+}
+
+model ProfilePhoto {
+  id                  String                @id @default(cuid())
+  profileId           String                @map("profile_id")
+  cloudinaryPublicId  String                @map("cloudinary_public_id")
+  secureUrl           String                @map("secure_url")
+  isPrimary           Boolean               @default(false) @map("is_primary")
+  orderIndex          Int                   @default(0) @map("order_index")
+  moderationStatus    PhotoModerationStatus @default(PENDING) @map("moderation_status")
+  rejectionReason     String?               @map("rejection_reason")
+  createdAt           DateTime              @default(now()) @map("created_at")
+  updatedAt           DateTime              @updatedAt @map("updated_at")
+
+  profile MatrimonialProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@map("profile_photos")
+}
+
+model PartnerPreference {
+  id                     String   @id @default(cuid())
+  profileId              String   @unique @map("profile_id")
+  minAge                 Int?     @map("min_age")
+  maxAge                 Int?     @map("max_age")
+  minHeightCm            Int?     @map("min_height_cm")
+  maxHeightCm            Int?     @map("max_height_cm")
+  maritalStatus          String[] @default([]) @map("marital_status")
+  educationLevels        String[] @default([]) @map("education_levels")
+  professions            String[] @default([])
+  countries              String[] @default([])
+  cities                 String[] @default([])
+  nationalities          String[] @default([])
+  religions              String[] @default([])
+  familyTypes            String[] @default([]) @map("family_types")
+  lifestyles             String[] @default([])
+  additionalExpectations String?  @map("additional_expectations") @db.Text
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  profile MatrimonialProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@map("partner_preferences")
+}
+
+model ProfilePrivacySettings {
+  id                String            @id @default(cuid())
+  profileId         String            @unique @map("profile_id")
+  profileVisibility ProfileVisibility @default(MEMBERS_ONLY) @map("profile_visibility")
+  photoVisibility   ProfileVisibility @default(MEMBERS_ONLY) @map("photo_visibility")
+  showDateOfBirth   Boolean           @default(false) @map("show_date_of_birth")
+  showContactInfo   Boolean           @default(false) @map("show_contact_info")
+  showIncome        Boolean           @default(false) @map("show_income")
+  showEmployer      Boolean           @default(false) @map("show_employer")
+  showFamilyDetails Boolean           @default(true) @map("show_family_details")
+  showLocation      Boolean           @default(true) @map("show_location")
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+
+  profile MatrimonialProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@map("profile_privacy_settings")
 }
