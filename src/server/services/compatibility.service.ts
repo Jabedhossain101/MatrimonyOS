@@ -188,3 +188,4 @@ export function calculateCompatibilityScore(
     evaluatedDimensionsCount: Math.round(totalWeight / 15),
   };
 }
+
