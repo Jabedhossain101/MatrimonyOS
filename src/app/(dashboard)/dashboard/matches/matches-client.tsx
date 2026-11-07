@@ -15,9 +15,11 @@ import {
   ChevronRight,
   MessageSquare,
   Search,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { MatchItem } from "@/server/services/interest.service";
+import { getOrCreateConversationAction } from "@/server/actions/messaging.actions";
 
 interface MatchesClientProps {
   initialData: {
@@ -31,6 +33,7 @@ interface MatchesClientProps {
 
 export function MatchesClient({ initialData, currentPage }: MatchesClientProps) {
   const router = useRouter();
+  const [loadingMatchId, setLoadingMatchId] = React.useState<string | null>(null);
 
   return (
     <div className="min-h-screen bg-[#FAF8F3] text-[#333333]">
@@ -206,10 +209,26 @@ export function MatchesClient({ initialData, currentPage }: MatchesClientProps) 
                         <span>View Biodata</span>
                       </Link>
 
-                      <div className="inline-flex items-center gap-1.5 rounded-xl bg-[#FAF8F3] border border-[#E8E2D5] px-3 py-1.5 text-xs font-medium text-[#777777]">
-                        <MessageSquare className="h-3.5 w-3.5 text-[#B89A63]" />
-                        <span>Chat (Phase 6)</span>
-                      </div>
+                      <button
+                        onClick={async () => {
+                          setLoadingMatchId(match.id);
+                          const res = await getOrCreateConversationAction(p.id);
+                          if (res.success && res.data?.conversationId) {
+                            router.push(`/dashboard/messages/${res.data.conversationId}`);
+                          } else {
+                            setLoadingMatchId(null);
+                          }
+                        }}
+                        disabled={loadingMatchId === match.id}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-[#0F2D3C] px-3.5 py-1.5 text-xs font-semibold text-white transition hover:bg-[#1a4459]"
+                      >
+                        {loadingMatchId === match.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-[#D4AF37]" />
+                        ) : (
+                          <MessageSquare className="h-3.5 w-3.5 text-[#D4AF37]" />
+                        )}
+                        <span>Send Message</span>
+                      </button>
                     </div>
                   </div>
                 </div>

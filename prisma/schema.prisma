@@ -81,6 +81,37 @@ enum InterestStatus {
   EXPIRED
 }
 
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+}
+
+enum ReportReason {
+  HARASSMENT
+  SPAM
+  FAKE_PROFILE
+  INAPPROPRIATE_CONTENT
+  SCAM_SUSPICIOUS
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  INVESTIGATING
+  RESOLVED
+  DISMISSED
+}
+
+enum NotificationType {
+  INTEREST_RECEIVED
+  INTEREST_ACCEPTED
+  INTEREST_DECLINED
+  MUTUAL_MATCH_CREATED
+  NEW_MESSAGE
+  SYSTEM_ANNOUNCEMENT
+}
+
 // -----------------------------------------------------------------------------
 // Better Auth Core Authentication Entities
 // -----------------------------------------------------------------------------
@@ -256,6 +287,18 @@ model MatrimonialProfile {
   matchesAsProfile1 MutualMatch[]         @relation("MatchesAsProfile1")
   matchesAsProfile2 MutualMatch[]         @relation("MatchesAsProfile2")
 
+  // Phase 6: Messaging, Safety & Notifications
+  conversationsAsP1      Conversation[]          @relation("ConversationsAsP1")
+  conversationsAsP2      Conversation[]          @relation("ConversationsAsP2")
+  sentMessages           Message[]               @relation("SentMessages")
+  blockedUsers           UserBlock[]             @relation("BlockedUsers")
+  blockedByUsers         UserBlock[]             @relation("BlockedByUsers")
+  reportsSubmitted       UserReport[]            @relation("ReportsSubmitted")
+  reportsReceived        UserReport[]            @relation("ReportsReceived")
+  notificationsReceived  Notification[]          @relation("NotificationsReceived")
+  notificationsSent      Notification[]          @relation("NotificationsSent")
+  notificationPreference NotificationPreference?
+
   @@index([userId])
   @@index([slug])
   @@index([gender, maritalStatus, religion])
@@ -399,9 +442,161 @@ model MutualMatch {
   profile1 MatrimonialProfile   @relation("MatchesAsProfile1", fields: [profile1Id], references: [id], onDelete: Cascade)
   profile2 MatrimonialProfile   @relation("MatchesAsProfile2", fields: [profile2Id], references: [id], onDelete: Cascade)
   interest MatrimonialInterest? @relation(fields: [interestId], references: [id], onDelete: SetNull)
+  conversation Conversation?
 
   @@unique([profile1Id, profile2Id])
   @@index([profile1Id])
   @@index([profile2Id])
   @@map("mutual_matches")
+}
+
+// -----------------------------------------------------------------------------
+// Phase 6: Secure Messaging, Conversations & Notifications
+// -----------------------------------------------------------------------------
+
+model Conversation {
+  id                   String   @id @default(cuid())
+  matchId              String?  @unique @map("match_id")
+  participant1Id       String   @map("participant1_id")
+  participant2Id       String   @map("participant2_id")
+  lastMessageAt        DateTime? @map("last_message_at")
+  lastMessageText      String?  @map("last_message_text") @db.Text
+  participant1Archived Boolean  @default(false) @map("participant1_archived")
+  participant2Archived Boolean  @default(false) @map("participant2_archived")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  match        MutualMatch?       @relation(fields: [matchId], references: [id], onDelete: SetNull)
+  participant1 MatrimonialProfile @relation("ConversationsAsP1", fields: [participant1Id], references: [id], onDelete: Cascade)
+  participant2 MatrimonialProfile @relation("ConversationsAsP2", fields: [participant2Id], references: [id], onDelete: Cascade)
+  messages     Message[]
+  reports      UserReport[]
+
+  @@unique([participant1Id, participant2Id])
+  @@index([participant1Id])
+  @@index([participant2Id])
+  @@index([lastMessageAt])
+  @@map("conversations")
+}
+
+model Message {
+  id                   String        @id @default(cuid())
+  conversationId       String        @map("conversation_id")
+  senderProfileId      String        @map("sender_profile_id")
+  content              String?       @db.Text
+  status               MessageStatus @default(SENT)
+  deliveredAt          DateTime?     @map("delivered_at")
+  readAt               DateTime?     @map("read_at")
+  isDeletedBySender    Boolean       @default(false) @map("is_deleted_by_sender")
+  isDeletedByRecipient Boolean       @default(false) @map("is_deleted_by_recipient")
+  createdAt            DateTime      @default(now()) @map("created_at")
+  updatedAt            DateTime      @updatedAt @map("updated_at")
+
+  conversation Conversation       @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       MatrimonialProfile @relation("SentMessages", fields: [senderProfileId], references: [id], onDelete: Cascade)
+  attachments  MessageAttachment[]
+  reports      UserReport[]
+
+  @@index([conversationId, createdAt])
+  @@index([conversationId, status])
+  @@index([senderProfileId])
+  @@map("messages")
+}
+
+model MessageAttachment {
+  id                 String   @id @default(cuid())
+  messageId          String   @map("message_id")
+  cloudinaryPublicId String   @map("cloudinary_public_id")
+  secureUrl          String   @map("secure_url")
+  format             String
+  bytes              Int
+  width              Int?
+  height             Int?
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@map("message_attachments")
+}
+
+model UserBlock {
+  id               String   @id @default(cuid())
+  blockerProfileId String   @map("blocker_profile_id")
+  blockedProfileId String   @map("blocked_profile_id")
+  reason           String?  @db.Text
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  blocker MatrimonialProfile @relation("BlockedUsers", fields: [blockerProfileId], references: [id], onDelete: Cascade)
+  blocked MatrimonialProfile @relation("BlockedByUsers", fields: [blockedProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerProfileId, blockedProfileId])
+  @@index([blockerProfileId])
+  @@index([blockedProfileId])
+  @@map("user_blocks")
+}
+
+model UserReport {
+  id                     String       @id @default(cuid())
+  reporterProfileId      String       @map("reporter_profile_id")
+  reportedProfileId      String       @map("reported_profile_id")
+  reportedMessageId      String?      @map("reported_message_id")
+  reportedConversationId String?      @map("reported_conversation_id")
+  reason                 ReportReason
+  description            String?      @db.Text
+  status                 ReportStatus @default(PENDING)
+  resolvedAt             DateTime?    @map("resolved_at")
+  resolutionNotes        String?      @map("resolution_notes") @db.Text
+  createdAt              DateTime     @default(now()) @map("created_at")
+  updatedAt              DateTime     @updatedAt @map("updated_at")
+
+  reporter             MatrimonialProfile @relation("ReportsSubmitted", fields: [reporterProfileId], references: [id], onDelete: Cascade)
+  reportedProfile      MatrimonialProfile @relation("ReportsReceived", fields: [reportedProfileId], references: [id], onDelete: Cascade)
+  reportedMessage      Message?           @relation(fields: [reportedMessageId], references: [id], onDelete: SetNull)
+  reportedConversation Conversation?      @relation(fields: [reportedConversationId], references: [id], onDelete: SetNull)
+
+  @@index([reporterProfileId])
+  @@index([reportedProfileId])
+  @@index([status])
+  @@map("user_reports")
+}
+
+model Notification {
+  id                 String           @id @default(cuid())
+  recipientProfileId String           @map("recipient_profile_id")
+  senderProfileId    String?          @map("sender_profile_id")
+  type               NotificationType
+  title              String
+  body               String           @db.Text
+  link               String?
+  entityId           String?          @map("entity_id")
+  isRead             Boolean          @default(false) @map("is_read")
+  readAt             DateTime?        @map("read_at")
+  createdAt          DateTime         @default(now()) @map("created_at")
+
+  recipient MatrimonialProfile  @relation("NotificationsReceived", fields: [recipientProfileId], references: [id], onDelete: Cascade)
+  sender    MatrimonialProfile? @relation("NotificationsSent", fields: [senderProfileId], references: [id], onDelete: SetNull)
+
+  @@index([recipientProfileId, isRead])
+  @@index([recipientProfileId, createdAt])
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  id             String   @id @default(cuid())
+  profileId      String   @unique @map("profile_id")
+  inAppInterests Boolean  @default(true) @map("in_app_interests")
+  inAppMatches   Boolean  @default(true) @map("in_app_matches")
+  inAppMessages  Boolean  @default(true) @map("in_app_messages")
+  emailInterests Boolean  @default(true) @map("email_interests")
+  emailMatches   Boolean  @default(true) @map("email_matches")
+  emailMessages  Boolean  @default(true) @map("email_messages")
+  emailSystem    Boolean  @default(true) @map("email_system")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  profile MatrimonialProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@map("notification_preferences")
 }

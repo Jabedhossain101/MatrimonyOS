@@ -1,7 +1,8 @@
 import "server-only";
 import { db } from "@/server/db";
-import { InterestStatus, type AppRole } from "@/generated/prisma";
+import { InterestStatus, NotificationType, type AppRole } from "@/generated/prisma";
 import { entitlementsService } from "./entitlements.service";
+import { notificationService } from "./notification.service";
 import { redactProfileForViewer, type RedactedPublicProfile } from "@/server/utils/privacy";
 
 export interface InterestItem {
@@ -153,6 +154,28 @@ export const interestService = {
         return myInterest.id;
       });
 
+      // Dispatch mutual match notifications to both parties
+      await Promise.allSettled([
+        notificationService.createNotification({
+          recipientProfileId,
+          senderProfileId,
+          type: NotificationType.MUTUAL_MATCH_CREATED,
+          title: "New Mutual Match!",
+          body: "You and a member have mutually connected. Direct messaging is now unlocked.",
+          link: "/dashboard/matches",
+          entityId: matchResult,
+        }),
+        notificationService.createNotification({
+          recipientProfileId: senderProfileId,
+          senderProfileId: recipientProfileId,
+          type: NotificationType.MUTUAL_MATCH_CREATED,
+          title: "New Mutual Match!",
+          body: "You and a member have mutually connected. Direct messaging is now unlocked.",
+          link: "/dashboard/matches",
+          entityId: matchResult,
+        }),
+      ]);
+
       return { success: true, interestId: matchResult, isMutualMatch: true };
     }
 
@@ -164,6 +187,17 @@ export const interestService = {
         status: InterestStatus.PENDING,
         message: message?.trim() || null,
       },
+    });
+
+    // Dispatch interest received notification to recipient
+    await notificationService.createNotification({
+      recipientProfileId,
+      senderProfileId,
+      type: NotificationType.INTEREST_RECEIVED,
+      title: "New Interest Received",
+      body: "A member has expressed matrimonial interest in your profile.",
+      link: "/dashboard/interests",
+      entityId: interest.id,
     });
 
     return { success: true, interestId: interest.id, isMutualMatch: false };
@@ -203,6 +237,17 @@ export const interestService = {
           respondedAt: new Date(),
         },
       });
+
+      await notificationService.createNotification({
+        recipientProfileId: interest.senderProfileId,
+        senderProfileId: currentProfileId,
+        type: NotificationType.INTEREST_DECLINED,
+        title: "Interest Update",
+        body: "A member has respectfully declined your matrimonial interest.",
+        link: "/dashboard/interests",
+        entityId: interest.id,
+      });
+
       return { success: true, isMutualMatch: false };
     }
 
@@ -240,6 +285,37 @@ export const interestService = {
         },
       });
     });
+
+    // Notify original sender of acceptance & mutual match
+    await Promise.allSettled([
+      notificationService.createNotification({
+        recipientProfileId: interest.senderProfileId,
+        senderProfileId: currentProfileId,
+        type: NotificationType.INTEREST_ACCEPTED,
+        title: "Interest Accepted!",
+        body: "Your matrimonial interest was accepted. You now have a mutual connection!",
+        link: "/dashboard/matches",
+        entityId: interest.id,
+      }),
+      notificationService.createNotification({
+        recipientProfileId: interest.senderProfileId,
+        senderProfileId: currentProfileId,
+        type: NotificationType.MUTUAL_MATCH_CREATED,
+        title: "Mutual Match Confirmed!",
+        body: "Direct messaging is now unlocked.",
+        link: "/dashboard/matches",
+        entityId: interest.id,
+      }),
+      notificationService.createNotification({
+        recipientProfileId: currentProfileId,
+        senderProfileId: interest.senderProfileId,
+        type: NotificationType.MUTUAL_MATCH_CREATED,
+        title: "Mutual Match Confirmed!",
+        body: "Direct messaging is now unlocked.",
+        link: "/dashboard/matches",
+        entityId: interest.id,
+      }),
+    ]);
 
     return { success: true, isMutualMatch: true };
   },

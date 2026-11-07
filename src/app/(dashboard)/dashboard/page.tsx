@@ -30,7 +30,11 @@ import {
   Send,
   Inbox,
   ExternalLink,
+  MessageSquare,
+  Bell,
 } from "lucide-react";
+import { messagingService } from "@/server/services/messaging.service";
+import { notificationService } from "@/server/services/notification.service";
 import { calculateProfileCompletion } from "@/server/services/profile-completion.service";
 import { calculateAge } from "@/lib/validations/profile";
 
@@ -51,18 +55,25 @@ export default async function DashboardPage() {
   const profile = await profileService.getOrCreateProfile(user.id);
   const completionStats = calculateProfileCompletion(profile);
 
-  const [shortlistCount, pendingInterestsCount, matchesCount] =
-    await Promise.all([
-      db.profileShortlist.count({ where: { profileId: profile.id } }),
-      db.matrimonialInterest.count({
-        where: { recipientProfileId: profile.id, status: "PENDING" },
-      }),
-      db.mutualMatch.count({
-        where: {
-          OR: [{ profile1Id: profile.id }, { profile2Id: profile.id }],
-        },
-      }),
-    ]);
+  const [
+    shortlistCount,
+    pendingInterestsCount,
+    matchesCount,
+    unreadMessagesCount,
+    unreadNotificationsCount,
+  ] = await Promise.all([
+    db.profileShortlist.count({ where: { profileId: profile.id } }),
+    db.matrimonialInterest.count({
+      where: { recipientProfileId: profile.id, status: "PENDING" },
+    }),
+    db.mutualMatch.count({
+      where: {
+        OR: [{ profile1Id: profile.id }, { profile2Id: profile.id }],
+      },
+    }),
+    messagingService.getUnreadMessagesTotalCount(profile.id),
+    notificationService.getUnreadCount(profile.id),
+  ]);
 
   const isAdmin =
     user.roles.includes(AppRole.ADMIN) ||
@@ -135,13 +146,39 @@ export default async function DashboardPage() {
 
             <Link
               href="/dashboard/matches"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[#14243A] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#1e3452]"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[#E8E2D5] bg-white px-3 py-1.5 text-xs font-semibold text-[#14243A] transition hover:border-[#B89A63] hover:text-[#B89A63]"
             >
               <Sparkles className="h-3.5 w-3.5 text-[#B89A63]" />
               <span className="hidden sm:inline">Matches</span>
               {matchesCount > 0 && (
                 <span className="rounded-full bg-emerald-500 px-1.5 py-0.2 text-[10px] font-bold text-white">
                   {matchesCount}
+                </span>
+              )}
+            </Link>
+
+            <Link
+              href="/dashboard/messages"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#0F2D3C] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#1a4459]"
+            >
+              <MessageSquare className="h-3.5 w-3.5 text-[#D4AF37]" />
+              <span className="hidden sm:inline">Messages</span>
+              {unreadMessagesCount > 0 && (
+                <span className="rounded-full bg-[#B89A63] px-1.5 py-0.2 text-[10px] font-bold text-white">
+                  {unreadMessagesCount}
+                </span>
+              )}
+            </Link>
+
+            <Link
+              href="/dashboard/notifications"
+              className="relative inline-flex items-center justify-center rounded-lg border border-[#E8E2D5] bg-white p-2 text-[#777777] transition hover:border-[#B89A63] hover:text-[#B89A63]"
+              title="Notification Center"
+            >
+              <Bell className="h-4 w-4" />
+              {unreadNotificationsCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white">
+                  {unreadNotificationsCount}
                 </span>
               )}
             </Link>
@@ -606,27 +643,58 @@ export default async function DashboardPage() {
                 </Link>
               </div>
 
-              {/* Phase 6 Roadmap */}
+              {/* Phase 6 Live Hub & Phase 7 Roadmap */}
               <div className="mt-5 border-t border-[#E8E2D5] pt-4">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-semibold text-[#777777] uppercase tracking-wider">
-                    Next Roadmap Milestone — Phase 6
+                  <h4 className="text-xs font-semibold text-[#14243A] uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Phase 6 Live — Secure Messaging & Notifications
                   </h4>
-                  <span className="rounded bg-amber-50 px-2 py-0.5 text-[9px] font-semibold text-amber-800 border border-amber-200">
-                    Planned Next
+                  <span className="rounded bg-emerald-50 px-2 py-0.5 text-[9px] font-semibold text-emerald-800 border border-emerald-200">
+                    Live
                   </span>
                 </div>
                 <div className="mt-2 grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-xl border border-dashed border-[#E8E2D5] bg-white/60 p-3">
-                    <div className="text-xs font-bold text-[#14243A]">Consent-Based Direct Messaging</div>
+                  <Link
+                    href="/dashboard/messages"
+                    className="group rounded-xl border border-[#E8E2D5] bg-white p-3 transition hover:border-[#B89A63] hover:shadow-xs"
+                  >
+                    <div className="text-xs font-bold text-[#14243A] group-hover:text-[#B89A63] transition flex items-center justify-between">
+                      <span>Private 1-on-1 Messaging</span>
+                      <span className="text-[10px] text-[#B89A63] font-medium">Open &rarr;</span>
+                    </div>
                     <p className="mt-0.5 text-[11px] text-[#777777]">
-                      End-to-end encrypted messaging channels unlocked only upon mutual match confirmation.
+                      Eligibility-gated chat for mutual matches with delivery receipts, image sharing, and safety controls.
                     </p>
-                  </div>
-                  <div className="rounded-xl border border-dashed border-[#E8E2D5] bg-white/60 p-3">
-                    <div className="text-xs font-bold text-[#14243A]">Guardian Co-Management & Calling</div>
+                  </Link>
+                  <Link
+                    href="/dashboard/notifications"
+                    className="group rounded-xl border border-[#E8E2D5] bg-white p-3 transition hover:border-[#B89A63] hover:shadow-xs"
+                  >
+                    <div className="text-xs font-bold text-[#14243A] group-hover:text-[#B89A63] transition flex items-center justify-between">
+                      <span>In-App Notification Center</span>
+                      <span className="text-[10px] text-[#B89A63] font-medium">Open &rarr;</span>
+                    </div>
                     <p className="mt-0.5 text-[11px] text-[#777777]">
-                      Wali/Guardian multi-family conference rooms, schedule video introductions, and privacy watermarking.
+                      Real-time updates on incoming proposals, mutual matches, chat alerts, and notification preferences.
+                    </p>
+                  </Link>
+                </div>
+
+                {/* Upcoming Phase 7 Milestone */}
+                <div className="mt-4 pt-3 border-t border-dashed border-[#E8E2D5]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-[#777777] uppercase tracking-wider">
+                      Next Milestone — Phase 7
+                    </span>
+                    <span className="rounded bg-amber-50 px-2 py-0.5 text-[9px] font-semibold text-amber-800 border border-amber-200">
+                      Planned Next
+                    </span>
+                  </div>
+                  <div className="mt-2 rounded-xl border border-dashed border-[#E8E2D5] bg-white/60 p-3">
+                    <div className="text-xs font-bold text-[#14243A]">Concierge Subscriptions & Guardian Conference Rooms</div>
+                    <p className="mt-0.5 text-[11px] text-[#777777]">
+                      Multi-tier memberships, Stripe payment gateway, Guardian/Wali multi-family conference sessions, and verified profile boosts.
                     </p>
                   </div>
                 </div>

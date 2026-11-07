@@ -26,6 +26,26 @@ export interface EmailService {
     name: string,
     message: string
   ): Promise<boolean>;
+  sendInterestReceivedEmail(
+    to: string,
+    recipientName: string,
+    senderName: string
+  ): Promise<boolean>;
+  sendInterestAcceptedEmail(
+    to: string,
+    recipientName: string,
+    partnerName: string
+  ): Promise<boolean>;
+  sendMutualMatchEmail(
+    to: string,
+    recipientName: string,
+    partnerName: string
+  ): Promise<boolean>;
+  sendNewMessageNotificationEmail(
+    to: string,
+    recipientName: string,
+    senderName: string
+  ): Promise<boolean>;
 }
 
 class ResendEmailService implements EmailService {
@@ -256,6 +276,143 @@ class ResendEmailService implements EmailService {
       subject: "MatrimonyOS Security Alert",
       html: this.getBaseEmailTemplate(heading, bodyContent),
       text: `Hello ${name},\n\n${message}\n\nIf you did not perform this action, contact ${APP_CONFIG.supportEmail} immediately.`,
+    });
+  }
+
+  async sendInterestReceivedEmail(
+    to: string,
+    recipientName: string,
+    senderName: string
+  ): Promise<boolean> {
+    const heading = "New Matrimonial Interest Received";
+    const bodyContent = `
+      <p style="font-size: 14px; line-height: 1.6; color: #333333; margin: 0 0 16px 0;">
+        Assalamu Alaikum / Hello <strong>${recipientName}</strong>,
+      </p>
+      <p style="font-size: 14px; line-height: 1.6; color: #333333; margin: 0 0 16px 0;">
+        A verified member, <strong>${senderName}</strong>, has expressed matrimonial interest in your profile.
+      </p>
+      <p style="font-size: 14px; line-height: 1.6; color: #333333; margin: 0 0 24px 0;">
+        You can review their biodata and choose whether to accept or decline respectfully.
+      </p>
+      <table cellpadding="0" cellspacing="0" border="0" style="margin: 0 0 24px 0;">
+        <tr>
+          <td style="background-color: #0F2D3C; border-radius: 6px; text-align: center;">
+            <a href="${env.NEXT_PUBLIC_APP_URL}/dashboard/interests" style="display: inline-block; padding: 14px 28px; font-size: 14px; font-weight: bold; color: #FAF8F3; text-decoration: none; border-radius: 6px;">
+              Review Inbound Interest
+            </a>
+          </td>
+        </tr>
+      </table>
+    `;
+
+    return this.send({
+      to,
+      subject: `New Matrimonial Interest from ${senderName} on MatrimonyOS`,
+      html: this.getBaseEmailTemplate(heading, bodyContent),
+      text: `Hello ${recipientName},\n\n${senderName} has sent you a matrimonial interest on MatrimonyOS.\n\nReview it here: ${env.NEXT_PUBLIC_APP_URL}/dashboard/interests`,
+    });
+  }
+
+  async sendInterestAcceptedEmail(
+    to: string,
+    recipientName: string,
+    partnerName: string
+  ): Promise<boolean> {
+    const heading = "Your Interest Was Accepted!";
+    const bodyContent = `
+      <p style="font-size: 14px; line-height: 1.6; color: #333333; margin: 0 0 16px 0;">
+        Assalamu Alaikum / Hello <strong>${recipientName}</strong>,
+      </p>
+      <p style="font-size: 14px; line-height: 1.6; color: #333333; margin: 0 0 16px 0;">
+        Great news! <strong>${partnerName}</strong> has accepted your matrimonial interest.
+      </p>
+      <p style="font-size: 14px; line-height: 1.6; color: #333333; margin: 0 0 24px 0;">
+        You now have a mutual connection and are eligible to start private messaging.
+      </p>
+      <table cellpadding="0" cellspacing="0" border="0" style="margin: 0 0 24px 0;">
+        <tr>
+          <td style="background-color: #B89A63; border-radius: 6px; text-align: center;">
+            <a href="${env.NEXT_PUBLIC_APP_URL}/dashboard/matches" style="display: inline-block; padding: 14px 28px; font-size: 14px; font-weight: bold; color: #FFFFFF; text-decoration: none; border-radius: 6px;">
+              View Mutual Match
+            </a>
+          </td>
+        </tr>
+      </table>
+    `;
+
+    return this.send({
+      to,
+      subject: `${partnerName} accepted your interest on MatrimonyOS`,
+      html: this.getBaseEmailTemplate(heading, bodyContent),
+      text: `Hello ${recipientName},\n\n${partnerName} accepted your matrimonial interest on MatrimonyOS!\n\nView your matches: ${env.NEXT_PUBLIC_APP_URL}/dashboard/matches`,
+    });
+  }
+
+  async sendMutualMatchEmail(
+    to: string,
+    recipientName: string,
+    partnerName: string
+  ): Promise<boolean> {
+    const heading = "Mutual Match Confirmed!";
+    const bodyContent = `
+      <p style="font-size: 14px; line-height: 1.6; color: #333333; margin: 0 0 16px 0;">
+        Assalamu Alaikum / Hello <strong>${recipientName}</strong>,
+      </p>
+      <p style="font-size: 14px; line-height: 1.6; color: #333333; margin: 0 0 16px 0;">
+        You and <strong>${partnerName}</strong> have mutually aligned and unlocked private messaging.
+      </p>
+      <table cellpadding="0" cellspacing="0" border="0" style="margin: 0 0 24px 0;">
+        <tr>
+          <td style="background-color: #0F2D3C; border-radius: 6px; text-align: center;">
+            <a href="${env.NEXT_PUBLIC_APP_URL}/dashboard/messages" style="display: inline-block; padding: 14px 28px; font-size: 14px; font-weight: bold; color: #FAF8F3; text-decoration: none; border-radius: 6px;">
+              Open Messages
+            </a>
+          </td>
+        </tr>
+      </table>
+    `;
+
+    return this.send({
+      to,
+      subject: `Mutual Match with ${partnerName} on MatrimonyOS`,
+      html: this.getBaseEmailTemplate(heading, bodyContent),
+      text: `Hello ${recipientName},\n\nYou and ${partnerName} have mutually connected on MatrimonyOS.\n\nOpen your messages: ${env.NEXT_PUBLIC_APP_URL}/dashboard/messages`,
+    });
+  }
+
+  async sendNewMessageNotificationEmail(
+    to: string,
+    recipientName: string,
+    senderName: string
+  ): Promise<boolean> {
+    const heading = "New Message Received";
+    const bodyContent = `
+      <p style="font-size: 14px; line-height: 1.6; color: #333333; margin: 0 0 16px 0;">
+        Assalamu Alaikum / Hello <strong>${recipientName}</strong>,
+      </p>
+      <p style="font-size: 14px; line-height: 1.6; color: #333333; margin: 0 0 16px 0;">
+        You have received a new private message from <strong>${senderName}</strong>.
+      </p>
+      <p style="font-size: 12px; line-height: 1.6; color: #777777; margin: 0 0 24px 0;">
+        To protect your privacy, message contents are never included in email notifications.
+      </p>
+      <table cellpadding="0" cellspacing="0" border="0" style="margin: 0 0 24px 0;">
+        <tr>
+          <td style="background-color: #0F2D3C; border-radius: 6px; text-align: center;">
+            <a href="${env.NEXT_PUBLIC_APP_URL}/dashboard/messages" style="display: inline-block; padding: 14px 28px; font-size: 14px; font-weight: bold; color: #FAF8F3; text-decoration: none; border-radius: 6px;">
+              View Message on MatrimonyOS
+            </a>
+          </td>
+        </tr>
+      </table>
+    `;
+
+    return this.send({
+      to,
+      subject: `New message from ${senderName} on MatrimonyOS`,
+      html: this.getBaseEmailTemplate(heading, bodyContent),
+      text: `Hello ${recipientName},\n\nYou have a new message from ${senderName} on MatrimonyOS.\n\nView it securely at: ${env.NEXT_PUBLIC_APP_URL}/dashboard/messages`,
     });
   }
 }
