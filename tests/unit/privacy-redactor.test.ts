@@ -57,6 +57,10 @@ describe("Privacy & Visibility Redaction Engine", () => {
     hobbies: ["Hiking", "Reading"],
     languages: ["English", "Bengali"],
     lifestyleDescription: "Balanced lifestyle",
+    isVerified: false,
+    verifiedAt: null,
+    moderationStatus: "APPROVED" as const,
+    rejectionReason: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     educations: [

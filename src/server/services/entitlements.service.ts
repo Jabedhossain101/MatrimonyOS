@@ -1,6 +1,7 @@
 import "server-only";
 import { db } from "@/server/db";
 import { AppRole } from "@/lib/permissions";
+import { SubscriptionStatus } from "@/generated/prisma";
 
 export interface InterestQuota {
   dailyLimit: number;
@@ -19,6 +20,46 @@ const DAILY_LIMITS: Record<AppRole, number> = {
 };
 
 export const entitlementsService = {
+  /**
+   * Determine maximum daily interest allowance based on active DB subscription or user roles.
+   */
+  async resolveDailyInterestLimit(userId: string | undefined, roles: AppRole[]): Promise<number> {
+    if (userId) {
+      try {
+        const activeSub = await db.userSubscription.findFirst({
+          where: {
+            userId,
+            status: SubscriptionStatus.ACTIVE,
+            currentPeriodEnd: { gte: new Date() },
+          },
+          include: {
+            plan: {
+              include: { entitlements: true },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+        });
+
+        if (activeSub) {
+          const limitEntitlement = activeSub.plan.entitlements.find(
+            (e) => e.key === "DAILY_INTEREST_LIMIT"
+          );
+          if (limitEntitlement) {
+            const parsed = parseInt(limitEntitlement.value, 10);
+            if (!isNaN(parsed) && parsed > 0) {
+              return parsed;
+            }
+          }
+        }
+      } catch (err) {
+        console.error("[EntitlementsService] Failed to query subscription entitlements:", err);
+      }
+    }
+
+    // Role-based fallback
+    return this.getDailyInterestLimit(roles);
+  },
+
   /**
    * Determine maximum daily interest allowance based on user roles.
    */
@@ -40,9 +81,10 @@ export const entitlementsService = {
    */
   async getInterestQuota(
     profileId: string,
-    roles: AppRole[]
+    roles: AppRole[],
+    userId?: string
   ): Promise<InterestQuota> {
-    const dailyLimit = this.getDailyInterestLimit(roles);
+    const dailyLimit = await this.resolveDailyInterestLimit(userId, roles);
 
     const startOfToday = new Date();
     startOfToday.setUTCHours(0, 0, 0, 0);

@@ -21,14 +21,18 @@ export const PERMISSIONS = {
   // Moderation & Trust
   REPORT_READ: "report:read",
   REPORT_RESOLVE: "report:resolve",
+  VERIFICATION_REVIEW: "verification:review",
 
   // Subscriptions & Billing
   SUBSCRIPTION_VIEW: "subscription:view",
   SUBSCRIPTION_MANAGE: "subscription:manage",
+  PLAN_MANAGE: "plan:manage",
 
-  // System Administration
+  // System Administration & Auditing
   ADMIN_ACCESS: "admin:access",
   ADMIN_MANAGE: "admin:manage",
+  AUDIT_LOG_VIEW: "audit_log:view",
+  ROLE_ASSIGN: "role:assign",
   PLATFORM_CONFIGURE: "platform:configure",
 } as const;
 
@@ -59,6 +63,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, readonly Permission[]> = {
   [AppRole.MODERATOR]: [
     PERMISSIONS.PROFILE_READ,
     PERMISSIONS.PROFILE_VERIFY,
+    PERMISSIONS.VERIFICATION_REVIEW,
     PERMISSIONS.USER_READ,
     PERMISSIONS.USER_SUSPEND,
     PERMISSIONS.REPORT_READ,
@@ -71,6 +76,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, readonly Permission[]> = {
     PERMISSIONS.PROFILE_EDIT,
     PERMISSIONS.PROFILE_VERIFY,
     PERMISSIONS.PROFILE_MANAGE,
+    PERMISSIONS.VERIFICATION_REVIEW,
     PERMISSIONS.USER_READ,
     PERMISSIONS.USER_SUSPEND,
     PERMISSIONS.USER_MANAGE,
@@ -78,8 +84,10 @@ export const ROLE_PERMISSIONS: Record<AppRole, readonly Permission[]> = {
     PERMISSIONS.REPORT_RESOLVE,
     PERMISSIONS.SUBSCRIPTION_VIEW,
     PERMISSIONS.SUBSCRIPTION_MANAGE,
+    PERMISSIONS.PLAN_MANAGE,
     PERMISSIONS.ADMIN_ACCESS,
     PERMISSIONS.ADMIN_MANAGE,
+    PERMISSIONS.AUDIT_LOG_VIEW,
   ],
   [AppRole.SUPER_ADMIN]: Object.values(PERMISSIONS) as Permission[],
 };

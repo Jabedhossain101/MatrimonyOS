@@ -56,6 +56,10 @@ describe("Profile Completion Dynamic Calculator", () => {
       hobbies: [],
       languages: [],
       lifestyleDescription: null,
+      isVerified: false,
+      verifiedAt: null,
+      moderationStatus: "APPROVED" as const,
+      rejectionReason: null,
       createdAt: new Date(),
       updatedAt: new Date(),
       educations: [],
@@ -144,6 +148,10 @@ describe("Profile Completion Dynamic Calculator", () => {
       hobbies: ["Reading", "Cooking"],
       languages: ["English", "Bengali"],
       lifestyleDescription: "Active lifestyle",
+      isVerified: false,
+      verifiedAt: null,
+      moderationStatus: "APPROVED" as const,
+      rejectionReason: null,
       // 7. Partner Preferences (20%)
       partnerPreference: {
         id: "pref_1",

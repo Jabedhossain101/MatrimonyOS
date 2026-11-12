@@ -99,6 +99,7 @@ enum ReportReason {
 enum ReportStatus {
   PENDING
   INVESTIGATING
+  UNDER_REVIEW
   RESOLVED
   DISMISSED
 }
@@ -110,6 +111,54 @@ enum NotificationType {
   MUTUAL_MATCH_CREATED
   NEW_MESSAGE
   SYSTEM_ANNOUNCEMENT
+}
+
+enum ProfileModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  UNDER_REVIEW
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  RESUBMITTED
+}
+
+enum VerificationType {
+  NATIONAL_ID
+  PASSPORT
+  DRIVING_LICENSE
+  PROFESSIONAL_CREDENTIAL
+  EDUCATION_CERTIFICATE
+  OTHER
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+enum BillingCycle {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+  LIFETIME
+}
+
+enum SubscriptionEventType {
+  CREATED
+  UPGRADED
+  DOWNGRADED
+  EXTENDED
+  CANCELED
+  STATUS_CHANGED
+  ADMIN_OVERRIDE
 }
 
 // -----------------------------------------------------------------------------
@@ -126,11 +175,18 @@ model User {
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
 
-  sessions           Session[]
-  accounts           Account[]
-  roles              UserRole[]
-  matrimonialProfile MatrimonialProfile?
-  shortlists         ProfileShortlist[]
+  sessions                      Session[]
+  accounts                      Account[]
+  roles                         UserRole[]
+  matrimonialProfile            MatrimonialProfile?
+  shortlists                    ProfileShortlist[]
+  subscriptions                 UserSubscription[]
+  assignedReports               UserReport[]            @relation("ReportsAssigned")
+  profileVerificationsReviewed  ProfileVerification[]   @relation("VerificationsReviewed")
+  profileVerificationsSubmitted ProfileVerification[]   @relation("VerificationsSubmitted")
+  auditLogsCreated              AuditLog[]              @relation("AuditLogsCreated")
+  subscriptionEventsCreated     SubscriptionEvent[]     @relation("SubscriptionEventsCreated")
+  platformSettingsUpdated       PlatformSetting[]       @relation("PlatformSettingsUpdated")
 
   @@map("user")
 }
@@ -299,9 +355,18 @@ model MatrimonialProfile {
   notificationsSent      Notification[]          @relation("NotificationsSent")
   notificationPreference NotificationPreference?
 
+  // Phase 7: Verification & Profile Moderation
+  isVerified       Boolean                 @default(false) @map("is_verified")
+  verifiedAt       DateTime?               @map("verified_at")
+  moderationStatus ProfileModerationStatus @default(APPROVED) @map("moderation_status")
+  rejectionReason  String?                 @map("rejection_reason") @db.Text
+  verifications    ProfileVerification[]
+
   @@index([userId])
   @@index([slug])
   @@index([gender, maritalStatus, religion])
+  @@index([moderationStatus])
+  @@index([isVerified])
   @@map("matrimonial_profiles")
 }
 
@@ -545,6 +610,7 @@ model UserReport {
   reason                 ReportReason
   description            String?      @db.Text
   status                 ReportStatus @default(PENDING)
+  assignedToUserId       String?      @map("assigned_to_user_id")
   resolvedAt             DateTime?    @map("resolved_at")
   resolutionNotes        String?      @map("resolution_notes") @db.Text
   createdAt              DateTime     @default(now()) @map("created_at")
@@ -554,9 +620,11 @@ model UserReport {
   reportedProfile      MatrimonialProfile @relation("ReportsReceived", fields: [reportedProfileId], references: [id], onDelete: Cascade)
   reportedMessage      Message?           @relation(fields: [reportedMessageId], references: [id], onDelete: SetNull)
   reportedConversation Conversation?      @relation(fields: [reportedConversationId], references: [id], onDelete: SetNull)
+  assignedTo           User?              @relation("ReportsAssigned", fields: [assignedToUserId], references: [id], onDelete: SetNull)
 
   @@index([reporterProfileId])
   @@index([reportedProfileId])
+  @@index([assignedToUserId])
   @@index([status])
   @@map("user_reports")
 }
@@ -599,4 +667,155 @@ model NotificationPreference {
 
   @@index([profileId])
   @@map("notification_preferences")
+}
+
+// -----------------------------------------------------------------------------
+// Phase 7: Profile Verification, Subscriptions, Audit Logs & Platform Settings
+// -----------------------------------------------------------------------------
+
+model ProfileVerification {
+  id                 String             @id @default(cuid())
+  profileId          String             @map("profile_id")
+  userId             String             @map("user_id")
+  verificationType   VerificationType   @map("verification_type")
+  status             VerificationStatus @default(PENDING)
+  documentUrl        String?            @map("document_url")
+  cloudinaryPublicId String?            @map("cloudinary_public_id")
+  documentType       String?            @map("document_type")
+  reviewerId         String?            @map("reviewer_id")
+  rejectionReason    String?            @map("rejection_reason") @db.Text
+  notes              String?            @db.Text
+  verifiedAt         DateTime?          @map("verified_at")
+  submittedAt        DateTime           @default(now()) @map("submitted_at")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+
+  profile  MatrimonialProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  user     User               @relation("VerificationsSubmitted", fields: [userId], references: [id], onDelete: Cascade)
+  reviewer User?              @relation("VerificationsReviewed", fields: [reviewerId], references: [id], onDelete: SetNull)
+
+  @@index([profileId])
+  @@index([userId])
+  @@index([status])
+  @@index([verificationType])
+  @@map("profile_verifications")
+}
+
+model SubscriptionPlan {
+  id             String   @id @default(cuid())
+  name           String
+  code           String   @unique
+  description    String?  @db.Text
+  priceMonthly   Decimal  @default(0) @db.Decimal(10, 2) @map("price_monthly")
+  priceQuarterly Decimal? @db.Decimal(10, 2) @map("price_quarterly")
+  priceYearly    Decimal? @db.Decimal(10, 2) @map("price_yearly")
+  currency       String   @default("USD")
+  isActive       Boolean  @default(true) @map("is_active")
+  isPopular      Boolean  @default(false) @map("is_popular")
+  displayOrder   Int      @default(0) @map("display_order")
+  features       String[] @default([])
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  entitlements  PlanEntitlement[]
+  subscriptions UserSubscription[]
+
+  @@map("subscription_plans")
+}
+
+model PlanEntitlement {
+  id          String   @id @default(cuid())
+  planId      String   @map("plan_id")
+  key         String
+  value       String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  plan SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, key])
+  @@index([planId])
+  @@map("plan_entitlements")
+}
+
+model UserSubscription {
+  id                     String             @id @default(cuid())
+  userId                 String             @map("user_id")
+  planId                 String             @map("plan_id")
+  status                 SubscriptionStatus @default(ACTIVE)
+  billingCycle           BillingCycle       @default(MONTHLY) @map("billing_cycle")
+  startDate              DateTime           @default(now()) @map("start_date")
+  currentPeriodStart     DateTime           @default(now()) @map("current_period_start")
+  currentPeriodEnd       DateTime           @map("current_period_end")
+  cancelAtPeriodEnd      Boolean            @default(false) @map("cancel_at_period_end")
+  canceledAt             DateTime?          @map("canceled_at")
+  paymentProvider        String?            @default("MANUAL") @map("payment_provider")
+  externalSubscriptionId String?            @map("external_subscription_id")
+  notes                  String?            @db.Text
+  createdAt              DateTime           @default(now()) @map("created_at")
+  updatedAt              DateTime           @updatedAt @map("updated_at")
+
+  user   User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan   SubscriptionPlan    @relation(fields: [planId], references: [id], onDelete: Restrict)
+  events SubscriptionEvent[]
+
+  @@index([userId, status])
+  @@index([planId])
+  @@map("user_subscriptions")
+}
+
+model SubscriptionEvent {
+  id             String                @id @default(cuid())
+  subscriptionId String                @map("subscription_id")
+  eventType      SubscriptionEventType @map("event_type")
+  fromStatus     String?               @map("from_status")
+  toStatus       String                @map("to_status")
+  actorUserId    String?               @map("actor_user_id")
+  reason         String?               @db.Text
+  metadata       Json?
+  createdAt      DateTime              @default(now()) @map("created_at")
+
+  subscription UserSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  actor        User?            @relation("SubscriptionEventsCreated", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([subscriptionId])
+  @@index([actorUserId])
+  @@map("subscription_events")
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String   @map("actor_user_id")
+  action      String
+  entityType  String   @map("entity_type")
+  entityId    String   @map("entity_id")
+  reason      String?  @db.Text
+  metadata    Json?
+  ipAddress   String?  @map("ip_address")
+  userAgent   String?  @map("user_agent")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  actor User @relation("AuditLogsCreated", fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  @@index([actorUserId])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model PlatformSetting {
+  id              String   @id @default(cuid())
+  key             String   @unique
+  value           String   @db.Text
+  category        String   @default("GENERAL")
+  description     String?
+  updatedByUserId String?  @map("updated_by_user_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  updatedBy User? @relation("PlatformSettingsUpdated", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+
+  @@map("platform_settings")
 }
