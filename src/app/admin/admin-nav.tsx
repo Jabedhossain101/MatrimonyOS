@@ -18,6 +18,8 @@ import {
   ArrowLeft,
   Shield,
   Crown,
+  Banknote,
+  RotateCcw,
 } from "lucide-react";
 import { AppRole } from "@/lib/permissions";
 import { SignOutButton } from "@/components/auth/sign-out-button";
@@ -77,6 +79,18 @@ export function AdminNav({ user }: AdminNavProps) {
       href: "/admin/reports",
       icon: ShieldAlert,
       allowed: isSuperAdmin || isAdmin || isModerator,
+    },
+    {
+      label: "bKash Payments",
+      href: "/admin/payments",
+      icon: Banknote,
+      allowed: isSuperAdmin || isAdmin, // MODERATOR excluded
+    },
+    {
+      label: "Refund Requests",
+      href: "/admin/refunds",
+      icon: RotateCcw,
+      allowed: isSuperAdmin || isAdmin, // MODERATOR excluded
     },
     {
       label: "Subscriptions",

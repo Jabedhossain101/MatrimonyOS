@@ -171,6 +171,15 @@ export default async function DashboardPage() {
             </Link>
 
             <Link
+              href="/dashboard/billing"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[#E8E2D5] bg-white px-3 py-1.5 text-xs font-semibold text-[#14243A] transition hover:border-[#B89A63] hover:text-[#B89A63]"
+              title="Subscription & bKash Billing"
+            >
+              <Crown className="h-3.5 w-3.5 text-[#B89A63]" />
+              <span className="hidden md:inline">Billing</span>
+            </Link>
+
+            <Link
               href="/dashboard/notifications"
               className="relative inline-flex items-center justify-center rounded-lg border border-[#E8E2D5] bg-white p-2 text-[#777777] transition hover:border-[#B89A63] hover:text-[#B89A63]"
               title="Notification Center"

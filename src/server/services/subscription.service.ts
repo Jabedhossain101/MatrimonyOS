@@ -19,7 +19,7 @@ export const DEFAULT_PLANS = [
     priceMonthly: 0,
     priceQuarterly: 0,
     priceYearly: 0,
-    currency: "USD",
+    currency: "BDT",
     isActive: true,
     isPopular: false,
     displayOrder: 1,
@@ -34,6 +34,8 @@ export const DEFAULT_PLANS = [
       DISCOVERY_ALLOWANCE: "50",
       ADVANCED_SEARCH_FILTERS: "false",
       CAN_SEND_ATTACHMENTS: "false",
+      CAN_VIEW_CONTACT_DETAILS: "false",
+      PROFILE_VISIBILITY: "STANDARD",
       PRIORITY_SUPPORT: "false",
     },
   },
@@ -41,10 +43,10 @@ export const DEFAULT_PLANS = [
     name: "Premium Concierge",
     code: "PREMIUM",
     description: "Expanded connectivity, verified priority badge, and enhanced discovery tools.",
-    priceMonthly: 29.99,
-    priceQuarterly: 74.99,
-    priceYearly: 249.99,
-    currency: "USD",
+    priceMonthly: 2500.0,
+    priceQuarterly: 6500.0,
+    priceYearly: 22000.0,
+    currency: "BDT",
     isActive: true,
     isPopular: true,
     displayOrder: 2,
@@ -60,6 +62,8 @@ export const DEFAULT_PLANS = [
       DISCOVERY_ALLOWANCE: "250",
       ADVANCED_SEARCH_FILTERS: "true",
       CAN_SEND_ATTACHMENTS: "true",
+      CAN_VIEW_CONTACT_DETAILS: "true",
+      PROFILE_VISIBILITY: "PRIORITY",
       PRIORITY_SUPPORT: "true",
     },
   },
@@ -67,10 +71,10 @@ export const DEFAULT_PLANS = [
     name: "Elite Global Match",
     code: "ELITE",
     description: "Uncapped discovery, premier matchmaking visibility, and dedicated advisor review.",
-    priceMonthly: 79.99,
-    priceQuarterly: 199.99,
-    priceYearly: 699.99,
-    currency: "USD",
+    priceMonthly: 6500.0,
+    priceQuarterly: 16500.0,
+    priceYearly: 55000.0,
+    currency: "BDT",
     isActive: true,
     isPopular: false,
     displayOrder: 3,
@@ -86,6 +90,8 @@ export const DEFAULT_PLANS = [
       DISCOVERY_ALLOWANCE: "1000",
       ADVANCED_SEARCH_FILTERS: "true",
       CAN_SEND_ATTACHMENTS: "true",
+      CAN_VIEW_CONTACT_DETAILS: "true",
+      PROFILE_VISIBILITY: "CONFIDENTIAL_ELITE",
       PRIORITY_SUPPORT: "true",
       CONFIDENTIAL_BROWSING: "true",
     },
@@ -94,34 +100,54 @@ export const DEFAULT_PLANS = [
 
 export const subscriptionService = {
   /**
-   * Seed standard plans if database table is currently unpopulated.
+   * Seed standard plans if database table is currently unpopulated,
+   * and migrate legacy USD default seed plans to BDT for bKash checkout.
    */
   async seedDefaultPlansIfEmpty() {
-    const existingCount = await db.subscriptionPlan.count();
-    if (existingCount > 0) return;
-
-    for (const plan of DEFAULT_PLANS) {
-      await db.subscriptionPlan.create({
-        data: {
-          name: plan.name,
-          code: plan.code,
-          description: plan.description,
-          priceMonthly: plan.priceMonthly,
-          priceQuarterly: plan.priceQuarterly,
-          priceYearly: plan.priceYearly,
-          currency: plan.currency,
-          isActive: plan.isActive,
-          isPopular: plan.isPopular,
-          displayOrder: plan.displayOrder,
-          features: plan.features,
-          entitlements: {
-            create: Object.entries(plan.entitlements).map(([key, value]) => ({
-              key,
-              value,
-            })),
+    const existingPlans = await db.subscriptionPlan.findMany();
+    if (existingPlans.length === 0) {
+      for (const plan of DEFAULT_PLANS) {
+        await db.subscriptionPlan.create({
+          data: {
+            name: plan.name,
+            code: plan.code,
+            description: plan.description,
+            priceMonthly: plan.priceMonthly,
+            priceQuarterly: plan.priceQuarterly,
+            priceYearly: plan.priceYearly,
+            currency: plan.currency,
+            isActive: plan.isActive,
+            isPopular: plan.isPopular,
+            displayOrder: plan.displayOrder,
+            features: plan.features,
+            entitlements: {
+              create: Object.entries(plan.entitlements).map(([key, value]) => ({
+                key,
+                value,
+              })),
+            },
           },
-        },
-      });
+        });
+      }
+      return;
+    }
+
+    // Migrate legacy USD default plans to BDT if present
+    for (const existing of existingPlans) {
+      if (existing.currency === "USD") {
+        const template = DEFAULT_PLANS.find((p) => p.code === existing.code);
+        if (template) {
+          await db.subscriptionPlan.update({
+            where: { id: existing.id },
+            data: {
+              currency: "BDT",
+              priceMonthly: template.priceMonthly,
+              priceQuarterly: template.priceQuarterly,
+              priceYearly: template.priceYearly,
+            },
+          });
+        }
+      }
     }
   },
 
